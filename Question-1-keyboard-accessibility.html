@@ -24,9 +24,11 @@ body {
 a{
   color: #006b3a;
 }
-main a{
-  outline: none;
-}
+
+/* FIX 1: Removed "main a { outline: none; }" — This was suppressing focus indicators 
+   on all links inside <main>, making them invisible to keyboard users. 
+   Focus indicators must always be visible for accessibility (WCAG 2.4.7). */
+
 h2 {
   margin-top: 0;
 }
@@ -202,11 +204,14 @@ article p {
     <div class="container">
       <h1 class="logo">The Funion</h1>
       
-      <!-- Maybe this could be improved with aria-activedescendant later? -->
       <nav class="menu">
         <a href="#">Home</a>
         <a href="#">Politics</a>
-        <a href="#" tabindex="-1">Business</a>
+        <!-- FIX 2: Removed tabindex="-1" from Business link. 
+             tabindex="-1" removes the element from the tab order, making it 
+             unreachable by keyboard users. All navigation links must be 
+             keyboard accessible. -->
+        <a href="#">Business</a>
         <a href="#">Entertainment</a>
         <a href="#">Sports</a>
         <a href="#" class="btn-search pull-right"><img src="https://raw.githubusercontent.com/udacity/ud891/2de2a0688c68809a3b453db3a24b1a59e8401459/lesson2-focus/02-dom-order/images/search.svg" alt="Search" />Search</a> 
@@ -214,14 +219,7 @@ article p {
       </nav>
     </div>
   </header>
-  <div class="newsletter">
-    <div class="container">
-      <h3>Like the Funion? Consider joining our newsletter!</h3>
-      <input type="text">
-      <button type="button" onfocus="getFocus()">Sign up</button></div>
-      
-    </div>
-  </div>
+
   <main class="container">
     <h2 class="offscreen">Top story</h2>
     <article class="main-story">
@@ -239,11 +237,22 @@ article p {
     <div class="side-by-side">
       <div class="column">
         <div class="tier-header">
-          <h2 tabindex="0">In the news</h2>
+          <!-- FIX 4: Removed tabindex="0" from the "In the news" heading. 
+               Non-interactive elements like headings should not be placed in the 
+               tab order. Only interactive elements (links, buttons, inputs) should 
+               be focusable via keyboard. Adding tabindex="0" to non-interactive 
+               elements confuses keyboard users who expect focused items to be actionable. -->
+          <h2>In the news</h2>
         </div>
         <article>
           <h3 class="headline">Bee wonders if maybe everyone else is a drone and he's the only one who has it "figured out."</h3>
-          <p><a href="#" tabindex="1"><b>Read More</b></a></p>
+          <!-- FIX 3: Removed tabindex="1" from "Read More" link.
+               A positive tabindex value (like 1) disrupts the natural DOM tab order 
+               by forcing focus to jump to this element first, before all other 
+               elements on the page. This creates a confusing and illogical focus 
+               order for keyboard users. Links should use the default tab order 
+               (no tabindex or tabindex="0") so focus follows the visual/DOM order. -->
+          <p><a href="#"><b>Read More</b></a></p>
           <img src="https://github.com/udacity/ud891/blob/gh-pages/lesson2-focus/02-dom-order/images/bee.jpg?raw=true" alt="A bee on top of a flower" />
         </article>
       </div>
@@ -275,6 +284,10 @@ article p {
           <img src="https://github.com/udacity/ud891/blob/gh-pages/lesson2-focus/02-dom-order/images/coffee.jpg?raw=true" alt="A cup of coffee on a table" />
           <div class="info">
             <h3 class="headline">San Franciscans are losing their minds over this third wave, artisanal, fair trade, handcrafted, locavore coffee. <a href="#">Read More</a></h3>
+          <!-- FIX 6: Added missing closing </div> tag for the info div. 
+               The original code was missing this closing tag, which could cause 
+               rendering issues and affect the document structure. -->
+          </div>
         </article>
         <article>
           <img src="https://github.com/udacity/ud891/blob/gh-pages/lesson2-focus/02-dom-order/images/football.jpg?raw=true" alt="A football player hands the ball off to another player" />
@@ -286,16 +299,33 @@ article p {
     </div>
     
   </main>
-  <!--   stuff can be added here :)
-  <footer>
-  </footer>
-  -->
-  
+
+  <!-- FIX 7: Moved the newsletter section AFTER <main> in the DOM order.
+       Previously, it appeared before <main> in the DOM, which meant keyboard 
+       users would tab through the newsletter input and button before reaching 
+       the main content. DOM order should match the visual reading order so 
+       keyboard navigation is logical and intuitive (WCAG 2.4.3). -->
+  <div class="newsletter">
+    <div class="container">
+      <!-- FIX 7b: Added a label for the newsletter input for accessibility -->
+      <h3><label for="newsletter-email">Like the Funion? Consider joining our newsletter!</label></h3>
+      <input type="text" id="newsletter-email" aria-label="Email for newsletter">
+      <!-- FIX 5: Changed onfocus="getFocus()" to onclick="getFocus()".
+           The original used onfocus, which hijacked focus by opening a new window 
+           whenever a keyboard user tabbed to the button. This is a focus trap — 
+           the user never gets to activate the button intentionally. Using onclick 
+           ensures the action only fires when the user deliberately clicks or 
+           presses Enter/Space on the button (expected behavior). -->
+      <button type="button" onclick="getFocus()">Sign up</button>
+    </div>
+  </div>
+
   <script>
     function getFocus() {
       window.open('https://aidaform.com/templates/thank-you-page-with-redirects.html','mywindow').focus()
     }
-    </script>
+  </script>
 </body>
 
 </html>
+

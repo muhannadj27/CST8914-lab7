@@ -23,29 +23,54 @@
     
     fieldset ul {
       margin: 0;
-    }</style>
+    }
+
+    /* FIX: Added style for the success message to be visible and clear */
+    .success-message {
+      color: green;
+      font-weight: bold;
+      padding: 10px;
+      border: 2px solid green;
+      margin-bottom: 10px;
+    }
+    </style>
     </head>
     <body>
         <h1>Feedback form</h1>
     <form>
+        <!-- FIX 1: Added "for" attribute to all labels to associate them with their 
+             corresponding input fields. Labels must be programmatically linked to 
+             their inputs so screen readers can announce the field purpose when the 
+             input is focused (WCAG 1.3.1, 4.1.2). -->
         <div class="control">
-          <label>Full name <span class="required">*</span></label><input id="name" name="name" type="text" />
+          <label for="name">Full name <span class="required">*</span></label><input id="name" name="name" type="text" />
         </div>
         <div class="control">
-          <label>Biography</label><textarea id="biography" name="biography" type="text"></textarea>
-          <span>Include examples on your skills in JavaScript.</span>
+          <!-- FIX 3: Added aria-describedby to link the biography textarea to its 
+               hint text. This ensures screen readers announce the hint 
+               "Include examples on your skills in JavaScript" when the user 
+               focuses the textarea (WCAG 1.3.1). -->
+          <label for="biography">Biography</label><textarea id="biography" name="biography" type="text" aria-describedby="biography_hint"></textarea>
+          <span id="biography_hint">Include examples on your skills in JavaScript.</span>
         </div>
         
-          <div>Gender</div>
+        <!-- FIX 2: Wrapped gender radio buttons in a <fieldset> with <legend>.
+             Radio button groups must be enclosed in a fieldset with a legend so 
+             screen readers can announce the group label ("Gender") when navigating 
+             to any radio button in the group. Without this, screen readers only 
+             announce "Male" or "Female" with no context (WCAG 1.3.1, 4.1.2). -->
+        <fieldset>
+          <legend>Gender</legend>
           <div class="control">
-            <input id="gender_male" name="gender" type="radio" value="male" /><label>Male</label>
+            <input id="gender_male" name="gender" type="radio" value="male" /><label for="gender_male">Male</label>
           </div>
           <div class="control">
-            <input id="gender_female" name="gender" type="radio" value="female" /><label>Female</label>
+            <input id="gender_female" name="gender" type="radio" value="female" /><label for="gender_female">Female</label>
           </div>
+        </fieldset>
         
         <div class="control">
-          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" /><label>I accept the terms and conditions</label>
+          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" /><label for="accept_agbs">I accept the terms and conditions</label>
         </div>
         <div class="control">
           <input name="validate" type="hidden" value="1" /><input type="submit" value="Register" />
@@ -76,7 +101,10 @@
       
           if ((value = $.urlParam(input)) === null) {
             if ($('fieldset.errors').length === 0) {
-              $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
+              /* FIX 5b: Added role="alert" and aria-live="assertive" to the error fieldset 
+                 so screen readers immediately announce errors when they appear.
+                 Also added tabindex="-1" so focus can be programmatically moved here. */
+              $('form').prepend('<fieldset class="errors" role="alert" aria-live="assertive" tabindex="-1"><legend>Errors</legend><ul></ul></fieldset>');
             }
       
             $referencedElement = null;
@@ -91,19 +119,35 @@
               $elementToDescribe = $input;
               $referencedElement = $input;
             }
-      // R.G. hint: fix next line ;)
-            $error = $('<a>' + message + '</a>');
+
+            /* FIX 4: Added href attribute pointing to the input's ID on the error link.
+               The original code created an <a> tag without an href attribute. Without href,
+               the link is not keyboard focusable and not recognized as a link by screen 
+               readers. Adding href="#inputId" makes the error message a proper link that 
+               keyboard users can activate to jump to the problematic field. 
+               Also added aria-describedby error description span (WCAG 3.3.1). 
+               This is the line indicated by the comment "R.G. hint: fix next line ;)" */
+            $error = $('<a href="#' + ($referencedElement.attr('id') || input) + '">' + message + '</a>');
             $error.click(function (e) {
-              // If we rely on the link's href pointing to the input's ID, it doesn't trigger forms mode in screen readers
               $referencedElement.focus();
               return e.preventDefault();
             });
+
+            /* FIX 5c: Added error description element linked via aria-describedby 
+               so screen readers announce the error when the field is focused. */
+            var $errorDescription = $('<span id="' + input + '_description" class="error">' + message + '</span>');
             $elementToDescribe.attr('aria-describedby', input + '_description');
+            $elementToDescribe.after($errorDescription);
+
             $errorContainer.append('<li>').find('li:last').append($error);
       
             if ($(':not(form):focus').length === 0) {
-              // See https://stackoverflow.com/questions/46134247/jquery-setting-focus-doesnt-work-in-ie11/
-            
+              /* FIX 5: Added focus management — move focus to the errors fieldset 
+                 after validation so keyboard and screen reader users are immediately 
+                 notified of the errors. Without this, after clicking "Register", 
+                 there is no indication that errors occurred. Focus management ensures 
+                 the next focus moves to the errors area (WCAG 3.3.1, 4.1.3). */
+              $('fieldset.errors').focus();
             }
           } else {
             if ($input.is(':checkbox')) {
@@ -126,7 +170,15 @@
             validateInput('accept_agbs', 'You must accept our terms and conditions!');
       
             if ($('.error').length === 0) {
-              return alert('All inputs are valid.');
+              /* FIX 6: Replaced alert() with a visible, focusable success message.
+                 Using alert() is not accessible because screen readers may not 
+                 announce it consistently, and it provides no persistent visual 
+                 confirmation. Instead, we create a success message with role="alert" 
+                 that is announced by screen readers and visible to all users. 
+                 Focus is moved to it so keyboard users know the form was successful. */
+              var $success = $('<div class="success-message" role="alert" tabindex="-1">All inputs are valid.</div>');
+              $('form').prepend($success);
+              $success.focus();
             }
           }
         });
